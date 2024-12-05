@@ -1,0 +1,78 @@
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+{% include 'header.html' %}
+<style>   .form-container {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+.form-container h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #333;
+}
+.form-container input, .form-container textarea {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+.form-container input[type="number"] {
+    width: calc(50% - 10px);
+    display: inline-block;
+}
+.form-container button {
+    width: 100%;
+    padding: 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.form-container button:hover {
+    background-color: #0056b3;
+}
+.form-container .form-group {
+    margin-bottom: 15px;
+}
+</style>
+<div class="form-container">
+    <h2>Add New Announcement</h2>
+    <form method="POST">
+        <div class="form-group">
+            <label for="title">Title</label>
+            <input type="text" name="title" id="title" placeholder="Enter the title" required>
+        </div>
+        <div class="form-group">
+            <label for="content">Announcement Content</label>
+            <textarea name="content" id="content" placeholder="Enter the announcement content" rows="4" required></textarea>
+        </div>
+        <div class="form-group">
+            <label for="gps_lat_min">GPS Latitude Min</label>
+            <input type="number" step="0.0001" name="gps_lat_min" id="gps_lat_min" placeholder="Enter min latitude">
+        </div>
+        <div class="form-group">
+            <label for="gps_lat_max">GPS Latitude Max</label>
+            <input type="number" step="0.0001" name="gps_lat_max" id="gps_lat_max" placeholder="Enter max latitude">
+        </div>
+        <div class="form-group">
+            <label for="gps_long_min">GPS Longitude Min</label>
+            <input type="number" step="0.0001" name="gps_long_min" id="gps_long_min" placeholder="Enter min longitude">
+        </div>
+        <div class="form-group">
+            <label for="gps_long_max">GPS Longitude Max</label>
+            <input type="number" step="0.0001" name="gps_long_max" id="gps_long_max" placeholder="Enter max longitude">
+        </div>
+        <div class="form-group">
+            <label for="viewers">Viewers (comma-separated)</label>
+            <input type="text" name="viewers" id="viewers" placeholder="Enter viewers' IDs">
+        </div>
+        <button type="submit">Add Announcement</button>
+    </form>
+</div>

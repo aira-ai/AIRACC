@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incident Reports</title>
+    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+    <script src="{{ url_for('static', filename='js/scripts.js') }}" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    {% include 'header.html' %}
+
+    <h1>Incident Reports</h1>
+
+<!-- Advanced Search Form -->
+<form method="get" action="{{ url_for('reports') }}" class="advanced-search-form">
+    <fieldset>
+        <legend>Advanced Search</legend>
+
+        <div class="form-row">
+            <div class="form-field">
+                <label for="id">By ID:</label>
+                <input type="text" id="id" name="id" value="{{ request.args.get('id', '') }}">
+            </div>
+
+            <div class="form-field">
+                <label for="category">Category:</label>
+                <input type="text" id="category" name="category" value="{{ request.args.get('category', '') }}">
+            </div>
+
+            <div class="form-field">
+                <label for="type">By Type:</label>
+                <select id="type" name="type">
+                    <option value="">NONE</option>
+                    <option value="citizen-online">CITIZEN REPORT</option>
+                    <option value="dispatch">DISPATCH</option>
+                    <option value="blotter">BLOTTER</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <label for="tag">By Tag:</label>
+                <select id="tag" name="tag">
+                    <option value="">NONE</option>
+                    <option value="URGENT">URGENT</option>
+                    <option value="FALSE REPORT">FALSE REPORT</option>
+                    <option value="NON-URGENT">NON-URGENT</option>
+                    <option value="SCAM">SCAM</option>
+                    <option value="DISREGARD">DISREGARD</option>
+                    <option value="RESOLVED">RESOLVED</option>
+                    <option value="EMERGENCY">EMERGENCY</option>
+                    <option value="NO TAG">NO TAG</option>
+                </select>
+            </div>
+
+            <div class="form-field">
+                <label for="location">Location:</label>
+                <input type="text" id="location" name="location" value="{{ request.args.get('location', '') }}">
+            </div>
+
+            <div class="form-field">
+                <label for="start_date">Start Date:</label>
+                <input type="date" id="start_date" name="start_date" value="{{ request.args.get('start_date', '') }}">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <label for="end_date">End Date:</label>
+                <input type="date" id="end_date" name="end_date" value="{{ request.args.get('end_date', '') }}">
+            </div>
+
+            <div class="form-field">
+                <label for="report_text">Report Text:</label>
+                <input type="text" id="report_text" name="report_text" value="{{ request.args.get('report_text', '') }}">
+            </div>
+
+           
+        </div>
+
+        <button type="submit" class="submit-btn">Search</button>
+    </fieldset>
+</form>
+
+<form method="get" action="{{ url_for('reports') }}" class="advanced-search-form">
+    <fieldset>
+        <legend>No of Records Per Page</legend>
+
+        <label for="per_page">Records per page:</label>
+        <select id="per_page" name="per_page">
+            <option value="10" {% if request.args.get('per_page', '10') == '10' %}selected{% endif %}>10</option>
+            <option value="20" {% if request.args.get('per_page') == '20' %}selected{% endif %}>20</option>
+            <option value="50" {% if request.args.get('per_page') == '50' %}selected{% endif %}>50</option>
+        </select>
+
+        <button type="submit" class="submit-btn">Search</button>
+    </fieldset>
+</form>
+    
+    <!-- Incident Table -->
+    <h2>Incident Details</h2>
+    <table id="incident-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Category</th>
+                <th>Type</th>
+                <th>Tags</th>
+                <th>Report</th>
+                <th>Location</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for incident in incidents %}
+                <tr>
+                    <td>{{ incident.id }}</td>
+                    <td>{{ incident.category }}</td>
+                    <td>{{ incident.type }}</td>
+                    <td>{{ ', '.join(incident.tags) }}</td>
+                    <td><a href="{{ url_for('incident_details', incident_id=incident.id) }}">{{ incident.report_text }}</a></td>
+                    <td>{{ incident.location }}</td>
+                    <td>{{ incident.timestamp }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+      <!-- Pagination Controls -->
+      <div class="pagination">
+        {% if pagination.has_prev %}
+            <a href="{{ url_for('reports', page=pagination.prev_num, per_page=request.args.get('per_page', 10)) }}">&laquo; Prev</a>
+        {% endif %}
+    
+        <span>Page {{ pagination.page }} of {{ pagination.pages }}</span>
+    
+        {% if pagination.has_next %}
+            <a href="{{ url_for('reports', page=pagination.next_num, per_page=request.args.get('per_page', 10)) }}">Next &raquo;</a>
+        {% endif %}
+    </div>
+</body>
+</html>

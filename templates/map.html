@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incident Map</title>
+    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 700px;
+            width: 100%;
+        }
+        .filters {
+            margin: 20px 0;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filters label {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            min-width: 120px;
+        }
+
+        .filters input, .filters button {
+            font-size: 18px;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        .filters input[type="date"] {
+            width: 200px;
+        }
+
+        .filters input[type="text"] {
+            width: 300px;
+        }
+
+        .filters button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .filters button:hover {
+            background-color: #45a049;
+        }
+
+        .filters button:focus {
+            outline: none;
+        }
+
+        @media (max-width: 768px) {
+            .filters {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .filters label {
+                margin-bottom: 5px;
+            }
+            .filters input, .filters button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% include 'header.html' %}
+   
+    <div class="container">
+        <h1> AIRA EAGLE EYE</h1>
+        Use the AI search function (For example, "Find me places with garbage") to locate incidents on the map. <br> 
+    </div>
+
+    <div class="filters">
+        <label for="start-date">Start Date:</label>
+        <input type="date" id="start-date">
+        <label for="end-date">End Date:</label>
+        <input type="date" id="end-date">
+        <button id="filter-btn">Filter</button>
+
+        <label for="search-query">Search:</label>
+        <input type="text" id="search-query" placeholder="Search incidents...">
+        <button id="search-btn">Search</button>
+    </div>
+
+    <div id="map"></div>
+    <div id="incident-details"></div>
+
+    <table id="incident-table" class="incident-table">
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Location</th>
+                <th>Timestamp</th>
+                <th>Report</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        let map;
+        let markers = []; // Array to hold markers
+    
+        function initMap() {
+            map = L.map('map').setView([14.6098153, 121.0418842], 10); // Initial map view centered on Manila
+
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+    
+            // Initial load of incidents
+            fetchAndDisplayIncidents();
+        }
+    
+        function fetchAndDisplayIncidents(startDate = null, endDate = null, query = null) {
+            let url = '/map_data';
+            if (startDate && endDate) {
+                url += `?start_date=${startDate}&end_date=${endDate}`;
+            }
+            if (query) {
+                url += (url.includes('?') ? '&' : '?') + `query=${encodeURIComponent(query)}`;
+            }
+    
+            fetch(url)
+                .then(response => response.json())
+                .then(incidents => {
+                    // Clear existing markers
+                    clearMarkers();
+    
+                    // Clear the table
+                    const tableBody = document.getElementById('incident-table').querySelector('tbody');
+                    tableBody.innerHTML = '';
+    
+                    // Add new markers and rows to table
+                    incidents.forEach(incident => {
+                        // Skip incidents with invalid coordinates (latitude or longitude)
+                        if (!incident.latitude || !incident.longitude) {
+                            console.log(`Incident ID ${incident.id} skipped due to missing coordinates.`);
+                            return;
+                        }
+    
+                        const markerPosition = [incident.latitude, incident.longitude];
+    
+                        // Add marker to the map
+                        const marker = L.marker(markerPosition).addTo(map);
+    
+                        // Info window for displaying incident details
+                        marker.bindPopup(`
+                            <div class="incident-info">
+                                <strong>Category:</strong> ${incident.category}<br>
+                                <strong>Location:</strong> ${incident.location}<br>
+                                <strong>Timestamp:</strong> ${incident.timestamp}<br>
+                                <strong>Report:</strong> <a href="/incident/${incident.id}">${incident.report_text}</a>
+                            </div>
+                        `);
+    
+                        // Add table row
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${incident.category}</td>
+                            <td>${incident.location}</td>
+                            <td>${incident.timestamp}</td>
+                            <td><a href="/incident/${incident.id}">${incident.report_text}</a></td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                })
+                .catch(err => console.error("Error fetching incidents:", err));
+        }
+    
+        function clearMarkers() {
+            markers.forEach(marker => marker.remove()); // Remove all markers from the map
+            markers = []; // Clear the markers array
+        }
+    
+        // Event listener for the filter button
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set default dates to today's date
+            const today = new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD
+            document.getElementById('start-date').value = today;
+            document.getElementById('end-date').value = today;
+    
+            const filterBtn = document.getElementById('filter-btn');
+            filterBtn.addEventListener('click', () => {
+                const startDate = document.getElementById('start-date').value;
+                const endDate = document.getElementById('end-date').value;
+                if (startDate && endDate) {
+                    fetchAndDisplayIncidents(startDate, endDate);
+                } else {
+                    alert('Please select both start and end dates.');
+                }
+            });
+    
+            // Event listener for the search button
+            const searchBtn = document.getElementById('search-btn');
+            searchBtn.addEventListener('click', () => {
+                const query = document.getElementById('search-query').value;
+                fetchAndDisplayIncidents(null, null, query);
+            });
+        });
+
+        // Initialize the map
+        initMap();
+    </script>
+</body>
+</html>

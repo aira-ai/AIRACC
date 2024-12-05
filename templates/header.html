@@ -1,0 +1,206 @@
+
+
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+
+<style>/* General navigation styles */
+    nav ul {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        background-color: #333;
+    }
+    
+    nav ul li {
+        position: relative;
+        padding: 8px 15px;
+        margin: 0;
+    }
+    
+    nav ul li a {
+        text-decoration: none;
+        color: white;
+        padding: 8px 15px;
+        display: block;
+    }
+    
+    nav ul li a:hover {
+        background-color: #575757;
+    }
+    
+    /* Dropdown menu styles */
+    nav ul li .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #f9f9f9;
+        min-width: 160px;
+        box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+        z-index: 1;
+        flex-direction: column;
+    }
+    
+    nav ul li .dropdown-content a {
+        color: black;
+        padding: 8px 15px;
+        text-decoration: none;
+        display: block;
+        white-space: nowrap;
+    }
+    
+    nav ul li .dropdown-content a:hover {
+        background-color: #ddd;
+    }
+    
+    nav ul li .dropdown:hover .dropdown-content {
+        display: block;
+    }
+    
+    /* Burger menu styles */
+    .burger-menu {
+        display: none;
+        flex-direction: column;
+        justify-content: space-between;
+        width: 25px;
+        height: 18px;
+        cursor: pointer;
+    }
+    
+    .burger-menu span {
+        background: white;
+        height: 3px;
+        width: 100%;
+        border-radius: 5px;
+    }
+    
+    .menu-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        background-color: #333;
+    }
+    
+    .nav-links {
+        display: flex;
+        flex: 1;
+        justify-content: flex-end;
+    }
+    
+    .nav-links li {
+        margin: 0 10px;
+    }
+    
+    /* Responsive styles */
+    @media (max-width: 768px) {
+        .burger-menu {
+            display: flex;
+        }
+    
+        .nav-links {
+            display: none;
+            flex-direction: column;
+            background-color: #333;
+            position: absolute;
+            top: 50px;
+            right: 0;
+            width: 100%;
+        }
+    
+        .nav-links.active {
+            display: flex;
+        }
+    
+        .nav-links li {
+            text-align: center;
+            margin: 10px 0;
+        }
+    }</style>
+<header>
+    <nav>
+        <div class="menu-container">
+
+            <img src="static/images/upvillage.png" width="110px" height="130px" alt="B_logo" style="margin-right: 20px;">
+          
+            <div class="burger-menu" onclick="toggleMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/NLsearch">Search</a></li>
+                <li>
+                    <div class="dropdown">
+                        <a href="javascript:void(0)">Citizens</a>
+                        <div class="dropdown-content">
+                            <a href="/citizen_map">Citizen Map</a>
+                            <a href="/citizen_dashboard">Citizen Dashboard</a>
+                                
+                        </div>
+                    </div>
+                </li>
+             
+                <li>
+                    <div class="dropdown">
+                        <a href="javascript:void(0)">Command Center</a>
+                        <div class="dropdown-content">
+                            <a href="/dispatch">Dispatch/Blotter</a>
+                            <a href="/persons_of_interest">Persons of Interest</a>
+                                
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="dropdown">
+                        <a href="javascript:void(0)">Data/AI</a>
+                        <div class="dropdown-content">
+                            <a href="/reports">Reports</a>
+                            <a href="/create_survey">Create Survey</a>
+                            <a href="/manage_questions">Survey Questions</a>
+                            <a href="/view_responses">Responses</a>
+                            <a href="/heatmap">Sentiment Heat Map</a>
+                            <a href="/blotter_reports">Blotters</a>
+                                <a href="/ai">Prediction</a>
+                                <a href="/upload_media">Media Forensics</a>
+                        </div>
+                    </div>
+                </li>
+                
+        
+                <li><a href="/map">Map View</a></li>
+                <li>
+                    <div class="dropdown">
+                        <a href="javascript:void(0)">Settings</a>
+                        <div class="dropdown-content">
+                            <a href="/users">Manage Users</a>
+                            <a href="/logout">Logout</a>
+                        </div>
+                    </div>
+                </li>
+                <li>Logged in as {{ session['username'] }} <p class="" id="datetime"></p> </li>
+            </ul>
+        </div>
+    </nav>
+</header>
+<script>
+    function updateDateTime() {
+        const now = new Date();
+        const options = {
+            year: 'numeric', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+        };
+        document.getElementById("datetime").textContent = now.toLocaleString('en-US', options);
+    }
+
+    // Update every second
+    setInterval(updateDateTime, 1000);
+
+    // Initialize immediately
+    updateDateTime();
+</script>
+
+<script>function toggleMenu() {
+    const navLinks = document.querySelector('.nav-links');
+    navLinks.classList.toggle('active');
+}</script>
+

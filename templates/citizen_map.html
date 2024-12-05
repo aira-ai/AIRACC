@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Add Marker Clustering CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.1/dist/MarkerCluster.Default.css" />
+    <title>Citizen Data Dashboard</title>
+    <style>
+        #map {
+            height: 50vh;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        #filter-bar,
+        #search-bar {
+            margin: 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #filter-bar select,
+        #search-bar input {
+            padding: 5px;
+            width: 200px;
+        }
+
+        .pagination-button {
+            padding: 5px 10px;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+
+        .pagination-button.disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .pagination-button.active {
+            font-weight: bold;
+        }
+
+        .update-btn {
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .update-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        table {
+            width: 100%;
+            text-align: left;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        #pagination {
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    {% include 'header.html' %}
+    <h1 style="text-align: center;">Citizen Data Dashboard</h1>
+
+    <div id="filter-bar">
+        <label for="barangay-select">Select Barangay: </label>
+        <select id="barangay-select">
+            <option value="">-- All Barangays --</option>
+        </select>
+    </div>
+
+    <div id="search-bar">
+        <input type="text" id="search-name" placeholder="Search by name..." />
+        <input type="text" id="search-address" placeholder="Search by address..." />
+    </div>
+
+    <div id="map"></div>
+
+    <div id="citizen-records">
+        <h3 style="text-align: center;">Citizen Records</h3>
+        <table id="citizen-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Address</th>
+                    <th>Barangay</th>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+        </table>
+        <div id="pagination"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Add Marker Clustering Script -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.1/dist/leaflet.markercluster.js"></script>
+    <script>
+        const map = L.map('map').setView([14.6098153, 121.0418842], 12); // Default view
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+        }).addTo(map);
+
+        const barangaySelect = document.getElementById('barangay-select');
+        const markers = L.markerClusterGroup();  // Initialize marker cluster group
+        let currentPage = 1;
+        const recordsPerPage = 100;
+
+        // Fetch barangays and populate dropdown
+        async function fetchBarangays() {
+            try {
+                const response = await fetch('/get_barangays');
+                const barangays = await response.json();
+                if (Array.isArray(barangays)) {
+                    barangays.forEach(barangay => {
+                        const option = document.createElement('option');
+                        option.value = barangay;
+                        option.textContent = barangay;
+                        barangaySelect.appendChild(option);
+                    });
+                } else {
+                    console.error('Invalid data format: barangays should be an array.');
+                }
+            } catch (error) {
+                console.error('Error fetching barangays:', error);
+            }
+        }
+
+        // Fetch citizen data based on selected filters
+        async function fetchCitizenData(barangay = '', name = '', address = '') {
+            const url = new URL('/get_citizens', window.location.origin);
+            const params = new URLSearchParams();
+            if (barangay) params.append('barangay', barangay);
+            if (name) params.append('name', name);
+            if (address) params.append('address', address);
+            params.append('page', currentPage);
+            params.append('limit', recordsPerPage);
+            if (params.toString()) url.search = params.toString();
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (Array.isArray(data.records)) {
+                    updateTable(data.records);
+                    updateMap(data.records);
+                    updatePagination(data.totalRecords);
+                } else {
+                    console.error('Invalid citizen data format:', data);
+                }
+            } catch (error) {
+                console.error('Error fetching citizen data:', error);
+            }
+        }
+
+        // Update map with markers based on citizen data
+        function updateMap(citizens) {
+            markers.clearLayers(); // Clear existing markers
+            citizens.forEach(citizen => {
+                if (citizen.latitude && citizen.longitude) {
+                    addMarkerToMap(citizen.latitude, citizen.longitude, citizen.name, citizen.address);
+                } else {
+                    console.warn(`Missing coordinates for citizen: ${citizen.name}`);
+                }
+            });
+            map.addLayer(markers); // Add the cluster group to the map
+        }
+
+        // Add marker to map (with clustering)
+        function addMarkerToMap(latitude, longitude, name, address) {
+            const marker = L.marker([latitude, longitude])
+                .bindPopup(`<h3>${name}</h3><p>${address}</p>`);
+            markers.addLayer(marker);  // Add marker to the cluster group
+        }
+
+        // Update table with citizen data
+        function updateTable(citizens) {
+            const tableBody = document.getElementById('table-body');
+            tableBody.innerHTML = '';
+
+            citizens.forEach(citizen => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${citizen.name}</td>
+                    <td>${citizen.address}</td>
+                    <td>${citizen.barangay}</td>
+                    <td>${citizen.latitude || ''}</td>
+                    <td>${citizen.longitude || ''}</td>
+                    <td>
+                        <button class="update-btn" onclick="updateCoordinates(${citizen.ID}, '${citizen.address}')">
+                            Update Coordinates
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Update pagination controls
+        function updatePagination(totalRecords) {
+            const totalPages = Math.ceil(totalRecords / recordsPerPage);
+            const paginationContainer = document.getElementById('pagination');
+            paginationContainer.innerHTML = '';
+
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement('button');
+                button.textContent = i;
+                button.classList.add('pagination-button');
+                if (i === currentPage) button.classList.add('active');
+                button.addEventListener('click', () => {
+                    currentPage = i;
+                    fetchCitizenData(barangaySelect.value, document.getElementById('search-name').value, document.getElementById('search-address').value);
+                });
+                paginationContainer.appendChild(button);
+            }
+        }
+
+        // Event listener for barangay selection
+        barangaySelect.addEventListener('change', () => {
+            currentPage = 1;
+            fetchCitizenData(barangaySelect.value);
+        });
+
+        // Event listeners for search inputs
+        document.getElementById('search-name').addEventListener('input', () => {
+            currentPage = 1;
+            fetchCitizenData(barangaySelect.value, document.getElementById('search-name').value, document.getElementById('search-address').value);
+        });
+
+        document.getElementById('search-address').addEventListener('input', () => {
+            currentPage = 1;
+            fetchCitizenData(barangaySelect.value, document.getElementById('search-name').value, document.getElementById('search-address').value);
+        });
+
+        // Initial fetch of barangays and citizen data
+        fetchBarangays();
+        fetchCitizenData();
+    </script>
+</body>
+
+</html>

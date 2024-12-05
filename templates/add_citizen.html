@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+
+<html>
+    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+<head>
+    <title>Add Citizen</title>
+    
+</head>
+<body>{% include 'header.html' %}
+    <h1>Add a New Citizen</h1>
+    <form method="POST">
+        <label for="NAME">Name:</label>
+        <input type="text" id="NAME" name="NAME" required><br>
+        <label for="ADDRESS">Address:</label>
+        <input type="text" id="ADDRESS" name="ADDRESS" required><br>
+        <label for="BARANGAY">Barangay:</label>
+        <input type="text" id="BARANGAY" name="BARANGAY"><br>
+        <label for="GENDER">Gender:</label>
+        <input type="text" id="GENDER" name="GENDER"><br>
+        <label for="BIRTHDAY">Birthday:</label>
+        <input type="date" id="BIRTHDAY" name="BIRTHDAY"><br>
+        <label for="longitude">Longitude:</label>
+        <input type="text" id="longitude" name="longitude"><br>
+        <label for="latitude">Latitude:</label>
+        <input type="text" id="latitude" name="latitude"><br>
+        <label for="countrycode">Country Code:</label>
+        <input type="text" id="countrycode" name="countrycode"><br>
+        <button type="submit">Add Citizen</button>
+    </form>
+</body>
+</html>

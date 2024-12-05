@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIRA Reporting System</title>
+    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+    <link rel="stylesheet" href="static/css/styles.css">
+    <script src="static/js/scripts.js" defer></script>
+    <style>
+
+        
+        /* Global reset and basic styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto';font-size: 17px;
+        }
+
+        body {
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        /* Header styles */
+
+        .center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+}
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #000000;
+            padding: 10px 20px;
+            color: white;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            margin-top: 20px;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .header-logo img {
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .header-title {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .menu-bar {
+            display: flex;
+            gap: 15px;
+        }
+
+        .menu-bar a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        .menu-bar a:hover {
+            color: #FFD700;
+        }
+
+        /* Container styles */
+        .container {
+            margin: 20px auto;
+            padding: 20px;
+            max-width: 600px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Form styles */
+        h1 {
+            font-size: 1.8em;
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        form label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: inline-block;
+        }
+
+        textarea, input[type="file"] {
+            width: 100%;
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            height: 150px;
+            resize: vertical;
+        }
+
+        /* Buttons */
+        #submit-btn, .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: none;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #submit-btn {
+            background-color: #7e6a87;
+            width: 100%;
+        }
+
+        #submit-btn:hover {
+            background-color: #957cad;
+        }
+
+        /* Loader styles */
+        #loader {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: 18px;
+            color: #333;
+            z-index: 999;
+        }
+        
+        #progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        #progress-bar-fill {
+            height: 100%;
+            width: 0;
+            background-color: #76c7c0;
+            border-radius: 5px;
+        }
+
+        /* Google Sign-in button style */
+        .g-signin2 {
+            margin-top: 20px;
+        }
+    </style>
+    <meta name="google-signin-client_id" content="YOUR_GOOGLE_CLIENT_ID">
+</head>
+<body>
+    <!-- Header with logo and menu bar -->
+    <header class="header">
+        <div class="header-logo">
+            <img src="static/images/AIRA-1.png" alt="Logo">
+            <span class="header-title">AIRA Command Center</span>
+        </div>
+        <nav class="menu-bar">
+            <a href="#home">Home</a>
+            <a href="/login" id="login-link">Login</a>
+            <a href="/register">Register</a>
+            <a href="/answer_survey">Answer Survey</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <img src="static/images/upvillage.png" width="300px" height="350px" class="center" alt="B_logo">
+        <h1>Report an Incident</h1>
+
+        <!-- Incident Report Form -->
+        <form id="report-form" action="/report" method="POST" enctype="multipart/form-data">
+            <input type="hidden" id="user_id" name="user_id" value="">
+            <label for="report_text">Type or Talk - Press Mic below</label>
+            <textarea id="report_text" name="report_text" required></textarea>
+            <label for="audio">Record Audio (Optional):</label>
+            <div id="micContainer">
+                <button type="button" id="start-record-btn" class="btn btn-outline-secondary">🎤</button>
+                <button type="button" id="stop-record-btn" class="btn btn-outline-secondary" style="display:none;">⏹ Stop</button>
+            </div>
+            <label for="media">Upload Media (Optional):</label>
+            <input type="file" id="media" name="media" accept="image/*,video/*">
+            <input type="hidden" id="latitude" name="latitude">
+            <input type="hidden" id="longitude" name="longitude">
+            <button type="submit" id="submit-btn">Submit Report</button>
+        </form>
+
+        <div id="loader">
+            <span id="loader-text">Submitting Report...</span>
+            <div id="progress-bar">
+                <div id="progress-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const startBtn = document.getElementById('start-record-btn');
+            const stopBtn = document.getElementById('stop-record-btn');
+            const searchInput = document.getElementById('report_text');
+            const form = document.getElementById('report-form');
+            const loader = document.getElementById('loader');
+            const loaderText = document.getElementById('loader-text');
+            const progressBarFill = document.getElementById('progress-bar-fill');
+            let finalTranscript = "";
+
+            const fetchSession = async () => {
+                try {
+                    const response = await fetch('/session');
+                    const data = await response.json();
+                    if (data.logged_in) {
+                        document.getElementById('user_id').value = data.user_id;
+                        document.getElementById('login-link').innerText = 'Logout';
+                        document.getElementById('login-link').href = '/logout';
+                    } else {
+                        alert("You must be logged in to report an incident.");
+                        window.location.href = "/login";
+                    }
+                } catch (error) {
+                    console.error("Error fetching session data:", error);
+                }
+            };
+
+            const initGeolocation = () => {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    document.getElementById('latitude').value = position.coords.latitude;
+                    document.getElementById('longitude').value = position.coords.longitude;
+                });
+            };
+
+            const initSpeechRecognition = () => {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    alert("Your browser does not support speech recognition.");
+                    return;
+                }
+                const recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = true;
+
+                startBtn.addEventListener('click', () => {
+                    recognition.start();
+                    startBtn.style.display = 'none';
+                    stopBtn.style.display = 'inline-block';
+                });
+
+                stopBtn.addEventListener('click', () => {
+                    recognition.stop();
+                    startBtn.style.display = 'inline-block';
+                    stopBtn.style.display = 'none';
+                });
+
+                recognition.addEventListener('result', (event) => {
+                    let interimTranscript = "";
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        if (event.results[i].isFinal) {
+                            finalTranscript += event.results[i][0].transcript + " ";
+                        } else {
+                            interimTranscript += event.results[i][0].transcript;
+                        }
+                    }
+                    searchInput.value = finalTranscript + interimTranscript;
+                });
+
+                recognition.addEventListener('end', () => {
+                    startBtn.style.display = 'inline-block';
+                    stopBtn.style.display = 'none';
+                });
+            };
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                loader.style.display = 'block';
+                progressBarFill.style.width = '50%';
+                loaderText.innerText = 'Uploading...';
+
+                setTimeout(() => {
+                    progressBarFill.style.width = '100%';
+                    loaderText.innerText = 'Submitted!';
+                    form.submit();
+                    loader.style.display = 'none';
+                }, 3000);
+            });
+
+            fetchSession();
+            initGeolocation();
+            initSpeechRecognition();
+        });
+    </script>
+</body>
+</html>

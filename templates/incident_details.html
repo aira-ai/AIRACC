@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Incident Details</title>
+   
+   <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    
+</head>    {% include 'header.html' %}
+<body>
+    <div class="container">
+        <a href="{{ url_for('analyze_incident', incident_id=incident.id) }}">
+            <button class="btn">Analyze Incident</button>
+        </a>
+         <!-- Train AI button -->
+         
+        <table>
+            <tr>
+                <th>ID</th>
+                <td>{{ incident.id }}</td>
+            </tr>
+            <tr>
+                <th>Report Text</th>
+                <td> <h2>{{ incident.report_text }} </h2></td>
+            </tr>
+            <tr>
+                <th>Timestamp</th>
+                <td>{{ incident.timestamp }}</td>
+            </tr>
+            <tr>
+                <th>Category</th>
+                <td>{{ incident.category }}</td>
+            </tr>
+            <tr>
+                <th>Latitude</th>
+                <td>{{ incident.latitude }}</td>
+            </tr>
+            <tr>
+                <th>Longitude</th>
+                <td>{{ incident.longitude }}</td>
+            </tr>
+            <tr>
+                <th>Tokens</th>
+                <td>{{ incident.tokens }}</td>
+            </tr>
+            <tr>
+                <th>Notes</th>
+                <td>{{ incident.notes }}</td>
+            </tr>
+            <tr>
+                <th>Authorities Assigned</th>
+                <td>{{ incident.assigned_authorities }}</td>
+            </tr>
+            <tr>
+                <th>AIRA Analysis</th>
+                <td>{{ incident.openai_analysis }}</td>
+            </tr>
+            <tr>
+                <th>AI-Assisted Action Points</th>
+                <td>
+                    {% if action_points %}
+                        <ul>
+                            {% for action_point in action_points %}
+                                <li>{{ action_point }}</li>
+                            {% endfor %}
+
+                            <br><br> *AI trained or generated action points sometimes may be inaccurate. Please act accordingly.
+                            <br>You can use <a href="{{ url_for('generate_action_points', incident_id=incident.id) }}">Action Point Generator </a> for more AI-assisted relavant action points or <a href="{{ url_for('analyze_incident', incident_id=incident.id) }}">train the AI</a> with action points for this particular incident.</p>
+                        </ul>
+                    {% else %}
+                        <p>No relevant action points found. <br>You can use <a href="{{ url_for('generate_action_points', incident_id=incident.id) }}">Action Point Generator </a> for more relavant action points or <a href="{{ url_for('analyze_incident', incident_id=incident.id) }}">train the AI</a> with action points for this particular incident.</p>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th>Location</th>
+                <td>{{ incident.location }}</td>
+            </tr>
+            <tr>
+                <th>Language</th>
+                <td>{{ incident.language }}</td>
+            </tr>
+            <tr>
+                <th>Reported by:</th>
+                <td>{{ user_name }}</td>
+            </tr>
+            <tr>
+                <th>Media</th>
+                <td class="media-container">
+                    {% if incident.media_path %}
+                    {% if incident.media_path.endswith('.mp4') %}
+                        <video width="200" controls>
+                            <source src="../{{ incident.media_path }}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    {% else %}
+                        <img 
+                            src="../{{ incident.media_path }}" 
+                            alt="Media" 
+                            width="200" 
+                            class="clickable-image"
+                            data-bs-toggle="modal" 
+                            data-bs-target="#mediaModal"
+                        >
+                    {% endif %}
+                {% else %}
+                    No media
+                {% endif %} 
+                          <!-- Modal -->
+    <div class="modal fade" id="mediaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <img id="zoomable-image" src="" alt="Media">
+                </div>
+            </div>
+        </div>
+    </div>
+                </td>
+   
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const clickableImages = document.querySelectorAll('.clickable-image');
+        const modalImage = document.getElementById('zoomable-image');
+        let scale = 1;
+
+        // Open modal and set the image
+        clickableImages.forEach(img => {
+            img.addEventListener('click', () => {
+                modalImage.src = img.src;
+                scale = 1; // Reset zoom scale
+                modalImage.style.transform = `scale(${scale})`;
+            });
+        });
+
+        // Zoom and pan functionality
+        modalImage.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            scale += e.deltaY * -0.001; // Adjust zoom sensitivity
+            scale = Math.min(Math.max(.5, scale), 3); // Limit zoom level
+            modalImage.style.transform = `scale(${scale})`;
+        });
+
+        let isDragging = false;
+        let startX, startY;
+        let currentX = 0, currentY = 0;
+
+        modalImage.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX - currentX;
+            startY = e.clientY - currentY;
+            modalImage.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            modalImage.style.cursor = 'default';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            currentX = e.clientX - startX;
+            currentY = e.clientY - startY;
+            modalImage.style.transform = `scale(${scale}) translate(${currentX}px, ${currentY}px)`;
+        });
+    </script>
+            </tr><tr>
+                <th>Media Forensics</th>
+                <td>
+                    If there is a match found in incidents and persons of interest data, it will be displayed here for cross match.
+                    {% if matches %}
+                        <ul>
+                            {% for match in matches %}
+                                <li>
+                                    {% if 'uploads' in match.link %}
+                                        IMAGE RECOGNITION: Matched media in Incident records: 
+                                        <a href="{{ url_for('search_incidents', media_path=match.link) }}">OPEN INCIDENT</a>
+                                    {% elif 'POI' in match.link %}
+                                        IMAGE RECOGNITION: Matched media in Persons-of-Interest records: 
+                                        <a href="{{ url_for('search_person_of_interest', photo_path=match.link) }}">OPEN POI RECORD</a>
+                                    {% else %}
+                                        Matched media: 
+                                        <a href="{{ match.link }}">OPEN LINK</a>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                      <br>  No matching media found OR already found match for this in previous data. <br> You can go to <a href="/upload_media">MEDIA FORENSICS</a> to analyze more images or videos.
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+
+      
+        <h2>Add a Response</h2>
+        <form action="{{ url_for('add_response', incident_id=incident.id) }}" method="POST">
+            <label for="tag">TAG:</label>
+            <select id="tag" name="tag" required>
+                <option value="URGENT">URGENT</option>
+                <option value="FALSE REPORT">FALSE REPORT</option>
+                <option value="NON-URGENT">NON-URGENT</option>
+                <option value="SCAM">SCAM</option>
+                <option value="DISREGARD">DISREGARD</option>
+                <option value="RESOLVED">RESOLVED</option>
+                <option value="EMERGENCY">EMERGENCY</option>
+                <option value="NO TAG">NO TAG</option>
+            </select><br>
+        
+            <label for="response">Your Response:</label><br>
+            <textarea id="response" name="response" rows="4" cols="50" required></textarea><br>
+            <button  class="btn" type="submit">Add Response</button>
+        </form>
+
+        <h2>Incident Responses</h2>
+        {% if responses %}
+        <table>
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Response</th>
+                    <th>Tag</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for response in responses %}
+                <tr>
+                    <td>{{ response.user_id }}</td>
+                    <td>{{ response.response }}</td>
+                    <td>{{ response.tag }}</td>
+                    <td>{{ response.timestamp }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No responses yet.</p>
+        {% endif %}
+
+        <h2>Similar Incidents</h2>
+        {% if similar_incidents %}
+        <ul>
+            {% for similar in similar_incidents %}
+            <li>
+                <a href="{{ url_for('incident_details', incident_id=similar.id) }}">
+                    Incident ID: {{ similar.id }} - Category: {{ similar.category }} - Timestamp: {{ similar.timestamp }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>No similar incidents found.</p>
+        {% endif %}
+    </div>
+
+    
+</body>
+</html>
