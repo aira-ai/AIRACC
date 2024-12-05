@@ -2,6 +2,7 @@ attr==0.3.2
 colorama==0.4.6
 ConfigParser==7.1.0
 cryptography==44.0.0
+Cython==0.29.36
 dlib==19.24.6
 docutils==0.21.2
 filelock==3.16.1
